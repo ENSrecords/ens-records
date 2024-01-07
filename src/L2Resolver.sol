@@ -7,6 +7,7 @@ import "@ens/resolvers/profiles/IContentHashResolver.sol";
 import "@ens/resolvers/profiles/IAddrResolver.sol";
 import "@ens/resolvers/profiles/IAddressResolver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "forge-std/console.sol";
 
@@ -15,7 +16,8 @@ contract L2Resolver is
     IContentHashResolver,
     IAddrResolver,
     IAddressResolver,
-    Ownable
+    Ownable,
+    Multicall
 {
     address public gatewaySigner;
     mapping(bytes32 => bytes) public contenthash;
@@ -26,6 +28,10 @@ contract L2Resolver is
     error ExpiredSignature();
 
     constructor(address _signer) Ownable(msg.sender) {
+        gatewaySigner = _signer;
+    }
+
+    function setGatewaySigner(address _signer) external onlyOwner {
         gatewaySigner = _signer;
     }
 
@@ -96,15 +102,6 @@ contract L2Resolver is
 
         text[_node][_key] = _value;
     }
-
-    function multicall(
-        bytes[] calldata data
-    ) external returns (bytes[] memory results) {}
-
-    function multicallWithNodeCheck(
-        bytes32 nodehash,
-        bytes[] calldata data
-    ) external returns (bytes[] memory results) {}
 
     function addr(
         bytes32 node,

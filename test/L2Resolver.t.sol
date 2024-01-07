@@ -308,4 +308,73 @@ contract L2ResolverTest is Test {
             invalidSignerSig
         );
     }
+
+    function testSetTextRecordWithMulticall() public {
+        string memory key = "exampleKey";
+        string memory value = "exampleValue";
+        string memory key2 = "exampleKey2";
+        string memory value2 = "exampleValue2";
+        uint256 expiry = block.timestamp + 1 days;
+
+        bytes32 node;
+
+        assembly {
+            node := 0x1234
+        }
+
+        bytes memory gatewaySig;
+        bytes memory gatewaySig2;
+        {
+            bytes32 textHash = resolver.textHash(
+                node,
+                key,
+                value,
+                user,
+                expiry
+            );
+            bytes32 textHash2 = resolver.textHash(
+                node,
+                key2,
+                value2,
+                user,
+                expiry
+            );
+
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+                signerPrivatekey,
+                textHash
+            );
+            (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(
+                signerPrivatekey,
+                textHash2
+            );
+
+            gatewaySig = abi.encodePacked(r, s, v);
+            gatewaySig2 = abi.encodePacked(r2, s2, v2);
+        }
+        bytes memory data = abi.encodeWithSelector(
+            L2Resolver.setText.selector,
+            node,
+            key,
+            value,
+            expiry,
+            user,
+            gatewaySig
+        );
+        bytes memory data2 = abi.encodeWithSelector(
+            L2Resolver.setText.selector,
+            node,
+            key2,
+            value2,
+            expiry,
+            user,
+            gatewaySig2
+        );
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = data;
+        calls[1] = data2;
+        resolver.multicall(calls);
+        assertEq(resolver.text(node, key), value);
+        assertEq(resolver.text(node, key2), value2);
+    }
 }
