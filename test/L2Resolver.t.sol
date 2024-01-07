@@ -12,9 +12,7 @@ contract L2ResolverTest is Test {
     address internal user = vm.addr(userPrivateKey);
 
     function setUp() public {
-        address[] memory signers = new address[](1);
-        signers[0] = vm.addr(signerPrivatekey);
-        resolver = new L2Resolver(signers);
+        resolver = new L2Resolver(signer);
     }
 
     function testSetTextRecord() public {
@@ -39,7 +37,7 @@ contract L2ResolverTest is Test {
 
             gatewaySig = abi.encodePacked(r, s, v);
         }
-        resolver.setText(node, key, value, expiry, signer, gatewaySig);
+        resolver.setText(node, key, value, expiry, user, gatewaySig);
         assertEq(resolver.text(node, key), value);
     }
 
@@ -72,7 +70,7 @@ contract L2ResolverTest is Test {
             node,
             contentHashData,
             expiry,
-            signer,
+            user,
             gatewaySig
         );
 
@@ -104,7 +102,7 @@ contract L2ResolverTest is Test {
         bytes memory gatewaySig = abi.encodePacked(r, s, v);
 
         // Setting the address record
-        resolver.setAddr(node, coinType, addrData, expiry, signer, gatewaySig);
+        resolver.setAddr(node, coinType, addrData, expiry, user, gatewaySig);
 
         // Asserting the address record was set correctly
         assertEq(resolver.addr(node, coinType), addrData);
@@ -137,7 +135,7 @@ contract L2ResolverTest is Test {
         vm.warp(expiry + 1);
 
         vm.expectRevert(L2Resolver.ExpiredSignature.selector);
-        resolver.setText(node, key, value, expiry, signer, gatewaySig);
+        resolver.setText(node, key, value, expiry, user, gatewaySig);
     }
 
     function testSetContentHashRecord_Expired() public {
@@ -171,7 +169,7 @@ contract L2ResolverTest is Test {
             node,
             contentHashData,
             expiry,
-            signer,
+            user,
             gatewaySig
         );
     }
@@ -202,7 +200,7 @@ contract L2ResolverTest is Test {
         vm.warp(expiry + 1); // Fast forward time to after the expiry
 
         vm.expectRevert(L2Resolver.ExpiredSignature.selector);
-        resolver.setAddr(node, coinType, addrData, expiry, signer, gatewaySig);
+        resolver.setAddr(node, coinType, addrData, expiry, user, gatewaySig);
     }
 
     function testSetTextRecord_InvalidSignerSignature() public {
@@ -233,7 +231,7 @@ contract L2ResolverTest is Test {
             key,
             value,
             expiry,
-            signer,
+            user,
             invalidSignerSig // Valid user signature
         );
     }
@@ -268,7 +266,7 @@ contract L2ResolverTest is Test {
             node,
             contentHashData,
             expiry,
-            signer,
+            user,
             invalidSignerSig // Valid user signature
         );
     }
@@ -306,7 +304,7 @@ contract L2ResolverTest is Test {
             coinType,
             addrData,
             expiry,
-            signer,
+            user,
             invalidSignerSig
         );
     }

@@ -7,6 +7,8 @@ import "@ens/resolvers/profiles/IContentHashResolver.sol";
 import "@ens/resolvers/profiles/IAddrResolver.sol";
 import "@ens/resolvers/profiles/IAddressResolver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import "forge-std/console.sol";
 
 contract L2Resolver is
     ITextResolver,
@@ -15,19 +17,16 @@ contract L2Resolver is
     IAddressResolver,
     Ownable
 {
-    mapping(address => bool) public isSigner;
+    address public gatewaySigner;
     mapping(bytes32 => bytes) public contenthash;
     mapping(bytes32 => mapping(string => string)) public text;
-    uint256 public constant TTL = 300; // 5 minutes
+    mapping(bytes32 => mapping(uint256 => bytes)) public addr_;
 
-    error Unauthorised();
     error InvalidSignature();
     error ExpiredSignature();
 
-    constructor(address[] memory _signers) Ownable(msg.sender) {
-        for (uint i = 0; i < _signers.length; i++) {
-            isSigner[_signers[i]] = true;
-        }
+    constructor(address _signer) Ownable(msg.sender) {
+        gatewaySigner = _signer;
     }
 
     function setAddr(
@@ -37,7 +36,21 @@ contract L2Resolver is
         uint256 _expiry,
         address _owner,
         bytes calldata _gatewaySig
-    ) external {}
+    ) external {
+        _checkExpiry(_expiry);
+        bytes32 aHash = addrHash(_node, _coinType, _data, _owner, _expiry);
+        bool result = SignatureChecker.isValidSignatureNow(
+            gatewaySigner,
+            aHash,
+            _gatewaySig
+        );
+
+        if (!result) {
+            revert InvalidSignature();
+        }
+
+        addr_[_node][_coinType] = _data;
+    }
 
     function setContenthash(
         bytes32 _node,
@@ -45,7 +58,21 @@ contract L2Resolver is
         uint256 _expiry,
         address _owner,
         bytes calldata _gatewaySig
-    ) external {}
+    ) external {
+        _checkExpiry(_expiry);
+        bytes32 chash = contenthashHash(_node, _contenthash, _owner, _expiry);
+        bool result = SignatureChecker.isValidSignatureNow(
+            gatewaySigner,
+            chash,
+            _gatewaySig
+        );
+
+        if (!result) {
+            revert InvalidSignature();
+        }
+
+        contenthash[_node] = _contenthash;
+    }
 
     function setText(
         bytes32 _node,
@@ -54,7 +81,21 @@ contract L2Resolver is
         uint256 _expiry,
         address _owner,
         bytes calldata _gatewaySig
-    ) external {}
+    ) external {
+        _checkExpiry(_expiry);
+        bytes32 thash = textHash(_node, _key, _value, _owner, _expiry);
+        bool result = SignatureChecker.isValidSignatureNow(
+            gatewaySigner,
+            thash,
+            _gatewaySig
+        );
+
+        if (!result) {
+            revert InvalidSignature();
+        }
+
+        text[_node][_key] = _value;
+    }
 
     function multicall(
         bytes[] calldata data
@@ -68,9 +109,25 @@ contract L2Resolver is
     function addr(
         bytes32 node,
         uint256 coinType
-    ) external view returns (bytes memory) {}
+    ) external view returns (bytes memory) {
+        return addr_[node][coinType];
+    }
 
-    function addr(bytes32 node) external view returns (address payable) {}
+    function addr(bytes32 node) external view returns (address payable) {
+        address a;
+        bytes memory data = addr_[node][60];
+
+        assembly {
+            a := data
+        }
+        return payable(a);
+    }
+
+    function _checkExpiry(uint256 _expiry) internal view {
+        if (_expiry < block.timestamp) {
+            revert ExpiredSignature();
+        }
+    }
 
     function contenthashHash(
         bytes32 node,
