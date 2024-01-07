@@ -1,0 +1,10 @@
+# Folders to ignore
+cache/
+lib/
+node_modules/
+out/
+broadcast/
+
+# File to ignore
+.gas-snapshot
+.env
