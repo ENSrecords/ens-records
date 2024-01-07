@@ -122,7 +122,6 @@ contract L2ResolverTest is Test {
         bytes32 textHash = resolver.textHash(node, key, value, user, expiry);
 
         bytes memory gatewaySig;
-        bytes memory ownerSig;
         {
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(
                 signerPrivatekey,
@@ -216,7 +215,7 @@ contract L2ResolverTest is Test {
         bytes32 textHash = resolver.textHash(node, key, value, user, expiry);
 
         bytes memory invalidSignerSig;
-        bytes memory validUserSig;
+        
         {
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(
                 0xDeadBeef, // Example invalid private key for signer
@@ -252,7 +251,7 @@ contract L2ResolverTest is Test {
         );
 
         bytes memory invalidSignerSig;
-        bytes memory validUserSig;
+        
         {
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(
                 0xDeadBeef, // Example invalid private key for signer
@@ -289,7 +288,7 @@ contract L2ResolverTest is Test {
         );
 
         bytes memory invalidSignerSig;
-        bytes memory validUserSig;
+        
         {
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(
                 0xDeadBeef, // Example invalid private key for signer
