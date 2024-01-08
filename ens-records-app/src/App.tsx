@@ -6,6 +6,7 @@ import { config } from './config'
 import { Account } from './account' 
 import { WalletOptions } from './wallet-options' 
 import './tailwind.css';
+import { Resolver } from "./components/resolver";
 
 const queryClient = new QueryClient()
 
@@ -20,6 +21,7 @@ function App() {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}> 
         <ConnectWallet /> 
+        <Resolver />
       </QueryClientProvider> 
     </WagmiProvider>
   )
