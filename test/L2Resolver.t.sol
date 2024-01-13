@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
+import {console} from "forge-std/console.sol";
 import {L2Resolver} from "src/L2Resolver.sol";
 
 contract L2ResolverTest is Test {
@@ -37,7 +38,9 @@ contract L2ResolverTest is Test {
 
             gatewaySig = abi.encodePacked(r, s, v);
         }
-        resolver.setText(node, key, value, expiry, user, gatewaySig);
+
+        vm.startPrank(user);
+        resolver.setText(node, key, value, expiry, gatewaySig);
         assertEq(resolver.text(node, key), value);
     }
 
@@ -65,12 +68,13 @@ contract L2ResolverTest is Test {
 
         bytes memory gatewaySig = abi.encodePacked(r, s, v);
 
+        vm.prank(user);
         // Setting the content hash record
         resolver.setContenthash(
             node,
             contentHashData,
             expiry,
-            user,
+
             gatewaySig
         );
 
@@ -101,11 +105,44 @@ contract L2ResolverTest is Test {
 
         bytes memory gatewaySig = abi.encodePacked(r, s, v);
 
+        vm.prank(user);
         // Setting the address record
-        resolver.setAddr(node, coinType, addrData, expiry, user, gatewaySig);
+        resolver.setAddr(node, coinType, addrData, expiry, gatewaySig);
 
         // Asserting the address record was set correctly
         assertEq(resolver.addr(node, coinType), addrData);
+    }
+
+    function testSetAddrRecordFromInvalidAddress() public {
+        bytes32 node;
+        assembly {
+            node := 0x1234
+        }
+        uint256 coinType = 1; // Example coin type
+        bytes memory addrData = abi.encodePacked(user); // Replace with actual address data if needed
+        uint256 expiry = block.timestamp + 1 days;
+
+        // Hashing the address data
+        bytes32 addrHash = resolver.addrHash(
+            node,
+            coinType,
+            addrData,
+            user,
+            expiry
+        );
+
+        // Signing the hash
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivatekey, addrHash);
+
+        bytes memory gatewaySig = abi.encodePacked(r, s, v);
+
+        
+        address not_user = vm.addr(0xDeadBeef); // Example incorrect address
+        // Setting the address record from incorrect account
+        vm.prank(not_user);
+        vm.expectRevert(L2Resolver.InvalidSignature.selector);
+        resolver.setAddr(node, coinType, addrData, expiry, gatewaySig);
+
     }
 
     function testSetTextRecord_Expired() public {
@@ -132,9 +169,9 @@ contract L2ResolverTest is Test {
         }
 
         vm.warp(expiry + 1);
-
+        vm.prank(user);
         vm.expectRevert(L2Resolver.ExpiredSignature.selector);
-        resolver.setText(node, key, value, expiry, user, gatewaySig);
+        resolver.setText(node, key, value, expiry, gatewaySig);
     }
 
     function testSetContentHashRecord_Expired() public {
@@ -162,13 +199,13 @@ contract L2ResolverTest is Test {
         bytes memory gatewaySig = abi.encodePacked(r, s, v);
 
         vm.warp(expiry + 1); // Fast forward time to after the expiry
-
+        vm.prank(user);
         vm.expectRevert(L2Resolver.ExpiredSignature.selector);
         resolver.setContenthash(
             node,
             contentHashData,
             expiry,
-            user,
+
             gatewaySig
         );
     }
@@ -197,9 +234,9 @@ contract L2ResolverTest is Test {
         bytes memory gatewaySig = abi.encodePacked(r, s, v);
 
         vm.warp(expiry + 1); // Fast forward time to after the expiry
-
+        vm.prank(user);
         vm.expectRevert(L2Resolver.ExpiredSignature.selector);
-        resolver.setAddr(node, coinType, addrData, expiry, user, gatewaySig);
+        resolver.setAddr(node, coinType, addrData, expiry, gatewaySig);
     }
 
     function testSetTextRecord_InvalidSignerSignature() public {
@@ -224,13 +261,14 @@ contract L2ResolverTest is Test {
             invalidSignerSig = abi.encodePacked(r, s, v);
         }
 
+        vm.prank(user);
         vm.expectRevert(L2Resolver.InvalidSignature.selector);
         resolver.setText(
             node,
             key,
             value,
             expiry,
-            user,
+
             invalidSignerSig // Valid user signature
         );
     }
@@ -260,12 +298,13 @@ contract L2ResolverTest is Test {
             invalidSignerSig = abi.encodePacked(r, s, v);
         }
 
+        vm.prank(user);
         vm.expectRevert(L2Resolver.InvalidSignature.selector);
         resolver.setContenthash(
             node,
             contentHashData,
             expiry,
-            user,
+
             invalidSignerSig // Valid user signature
         );
     }
@@ -297,13 +336,14 @@ contract L2ResolverTest is Test {
             invalidSignerSig = abi.encodePacked(r, s, v);
         }
 
+        vm.prank(user);
         vm.expectRevert(L2Resolver.InvalidSignature.selector);
         resolver.setAddr(
             node,
             coinType,
             addrData,
             expiry,
-            user,
+
             invalidSignerSig
         );
     }
@@ -357,7 +397,6 @@ contract L2ResolverTest is Test {
             key,
             value,
             expiry,
-            user,
             gatewaySig
         );
         bytes memory data2 = abi.encodeWithSelector(
@@ -366,12 +405,14 @@ contract L2ResolverTest is Test {
             key2,
             value2,
             expiry,
-            user,
             gatewaySig2
         );
         bytes[] memory calls = new bytes[](2);
         calls[0] = data;
         calls[1] = data2;
+
+
+        vm.startPrank(user);
         resolver.multicall(calls);
         assertEq(resolver.text(node, key), value);
         assertEq(resolver.text(node, key2), value2);

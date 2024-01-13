@@ -39,11 +39,10 @@ contract L2Resolver is
         uint256 _coinType,
         bytes calldata _data,
         uint256 _expiry,
-        address _owner,
         bytes calldata _gatewaySig
     ) external {
         _checkExpiry(_expiry);
-        bytes32 aHash = addrHash(_node, _coinType, _data, _owner, _expiry);
+        bytes32 aHash = addrHash(_node, _coinType, _data, msg.sender, _expiry);
         bool result = SignatureChecker.isValidSignatureNow(
             gatewaySigner,
             aHash,
@@ -61,11 +60,10 @@ contract L2Resolver is
         bytes32 _node,
         bytes calldata _contenthash,
         uint256 _expiry,
-        address _owner,
         bytes calldata _gatewaySig
     ) external {
         _checkExpiry(_expiry);
-        bytes32 chash = contenthashHash(_node, _contenthash, _owner, _expiry);
+        bytes32 chash = contenthashHash(_node, _contenthash, msg.sender, _expiry);
         bool result = SignatureChecker.isValidSignatureNow(
             gatewaySigner,
             chash,
@@ -84,11 +82,10 @@ contract L2Resolver is
         string calldata _key,
         string calldata _value,
         uint256 _expiry,
-        address _owner,
         bytes calldata _gatewaySig
     ) external {
         _checkExpiry(_expiry);
-        bytes32 thash = textHash(_node, _key, _value, _owner, _expiry);
+        bytes32 thash = textHash(_node, _key, _value, msg.sender, _expiry);
         bool result = SignatureChecker.isValidSignatureNow(
             gatewaySigner,
             thash,
