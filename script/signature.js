@@ -42,7 +42,7 @@ async function getDomainSeparator() {
   );
 }
 
-async function addrHash(node, coinType, data, owner, expiry, signer) {
+async function addrHash(node, coinType, data, owner, expiry) {
   const domainSeparator = await getDomainSeparator();
   const dataHash = ethers.keccak256(
     ethers.AbiCoder.defaultAbiCoder().encode(
@@ -60,7 +60,9 @@ async function addrHash(node, coinType, data, owner, expiry, signer) {
 
   console.log("To sign:", toSign);
 
-  const signingKey = new ethers.SigningKey(signer.privateKey);
+                                    // this is the ccip private key we are using for testing
+  const private_key = ethers.getBytes("0xb9107381136de811b8e393a31c99b02382db3d374502c3b0f80f094d343df8d3");
+  const signingKey = new ethers.SigningKey(private_key);
   const signature = signingKey.sign(ethers.getBytes(toSign));
 
   return signature;
@@ -78,16 +80,8 @@ async function main() {
   const data = ethers.getBytes(owner);
   const expiry = 86401; // should be a resonable time in the future, recommend 60 seconds
 
-  const provider = ethers.getDefaultProvider("mainnet"); // Use appropriate provider
-  const signer = new ethers.Wallet(
-    "b9107381136de811b8e393a31c99b02382db3d374502c3b0f80f094d343df8d3", // This is the CCIP test private key we are using
-    provider
-  ); 
-
   // this example is for getting address hash. Will need to be modified for text or contenthash
-  const signature = await addrHash(node, coinType, data, owner, expiry, signer);
-
-
+  const signature = await addrHash(node, coinType, data, owner, expiry);
 
   const fullSignature = getFullSignature(signature);
   console.log("Full Signature:", fullSignature);
