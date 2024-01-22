@@ -9,7 +9,7 @@ import "@ens/resolvers/profiles/IAddressResolver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-
+import {console} from "forge-std/console.sol";
 contract L2Resolver is
     ITextResolver,
     IContentHashResolver,

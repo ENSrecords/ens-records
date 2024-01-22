@@ -7,20 +7,21 @@ import {L2Resolver} from "src/L2Resolver.sol";
 
 contract L2ResolverTest is Test {
     L2Resolver resolver;
-    uint256 internal signerPrivatekey = 0xA11CE;
+    uint256 internal signerPrivatekey = vm.envUint("CCIP_PRIVATE_KEY");
     uint256 internal userPrivateKey = 0xB0B;
     address internal signer = vm.addr(signerPrivatekey);
     address internal user = vm.addr(userPrivateKey);
 
     function setUp() public {
         resolver = new L2Resolver(signer);
+        
     }
 
     function testSetTextRecord() public {
         string memory key = "exampleKey";
         string memory value = "exampleValue";
         uint256 expiry = block.timestamp + 1 days;
-
+        console.log("chainid", block.chainid);
         bytes32 node;
 
         assembly {
@@ -82,7 +83,7 @@ contract L2ResolverTest is Test {
         assertEq(resolver.contenthash(node), contentHashData);
     }
 
-    function testSetAddrRecord() public {
+    function testSetAddrRecord__() public {
         bytes32 node;
         assembly {
             node := 0x1234
@@ -100,11 +101,13 @@ contract L2ResolverTest is Test {
             expiry
         );
 
+        console.logBytes32(addrHash);
+
         // Signing the hash
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivatekey, addrHash);
 
         bytes memory gatewaySig = abi.encodePacked(r, s, v);
-
+        console.logBytes(gatewaySig);
         vm.prank(user);
         // Setting the address record
         resolver.setAddr(node, coinType, addrData, expiry, gatewaySig);
