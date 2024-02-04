@@ -1,90 +1,79 @@
+const ENSHasher = require("./ensHasher");
 const ethers = require("ethers");
 
-const YOUR_CHAIN_ID = 84532;
-const YOUR_CONTRACT_ADDRESS = "0x14B4ff9964dbb803967Ffd2D24819EA5a8496476";
+// ** Important **:
+// The `owner` needs checking and confirming that they are the owner of the node before signing the hash
+async function getContenthash() {
+  const hasher = new ENSHasher();
 
-const L2Resolver = {
-  name: "L2Resolver",
-  version: "1",
-  chainId: YOUR_CHAIN_ID,
-  verifyingContract: YOUR_CONTRACT_ADDRESS,
-};
+  // Example test for getContentHash
+  const node = ethers.keccak256(ethers.toUtf8Bytes("example.eth"));
+  const chash = "0x123456"; // example content hash
+  const owner = "0x91769843CEc84Adcf7A48DF9DBd9694A39f44b42"; // example owner address
+  const expiry = Date.now() + 300; // example expiry timestamp
 
-function getFullSignature(signature) {
-  const { r, s, yParity } = signature;
-
-  // Calculate v (27 or 28 for Ethereum)
-  const v = 27 + yParity;
-
-  // Concatenate r, s, and v to get the full signature
-  const fullSignature = r + s.slice(2) + v.toString(16);
-  return fullSignature;
+  try {
+    const contentHashSignature = await hasher.getContentHash(
+      node,
+      chash,
+      owner,
+      expiry
+    );
+    console.log("Content Hash Signature:", contentHashSignature);
+  } catch (error) {
+    console.error("Test failed:", error);
+  }
 }
 
-async function getDomainSeparator() {
-  const domainTypeHash = ethers.keccak256(
-    ethers.toUtf8Bytes(
-      "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-    )
-  );
+async function getTextRecord() {
+  const hasher = new ENSHasher();
 
-  return ethers.keccak256(
-    ethers.AbiCoder.defaultAbiCoder().encode(
-      ["bytes32", "bytes32", "bytes32", "uint256", "address"],
-      [
-        domainTypeHash,
-        ethers.keccak256(ethers.toUtf8Bytes(L2Resolver.name)),
-        ethers.keccak256(ethers.toUtf8Bytes(L2Resolver.version)),
-        L2Resolver.chainId,
-        L2Resolver.verifyingContract,
-      ]
-    )
-  );
+  // Example test for getTextRecord
+  const node = ethers.keccak256(ethers.toUtf8Bytes("example.eth"));
+  const key = "testkey";
+  const val = "testval";
+
+  const owner = "0x91769843CEc84Adcf7A48DF9DBd9694A39f44b42"; // example owner address
+  const expiry = Date.now() + 300; // example expiry timestamp
+
+  try {
+    const contentHashSignature = await hasher.getTextRecordHash(
+      node,
+      key,
+      val,
+      owner,
+      expiry
+    );
+    console.log("Text record Signature:", contentHashSignature);
+  } catch (error) {
+    console.error("Test failed:", error);
+  }
 }
 
-async function addrHash(node, coinType, data, owner, expiry) {
-  const domainSeparator = await getDomainSeparator();
-  const dataHash = ethers.keccak256(
-    ethers.AbiCoder.defaultAbiCoder().encode(
-      ["bytes32", "uint256", "bytes", "address", "uint256"],
-      [node, coinType, data, owner, expiry]
-    )
-  );
+async function getAddress() {
+  const hasher = new ENSHasher();
 
-  const toSign = ethers.keccak256(
-    ethers.solidityPacked(
-      ["string", "bytes32", "bytes32"],
-      ["\x19\x01", domainSeparator, dataHash]
-    )
-  );
+  // Example test for getAddress
+  const node = ethers.keccak256(ethers.toUtf8Bytes("example.eth"));
+  const addr = ethers.getBytes("0x91769843CEc84Adcf7A48DF9DBd9694A39f44b42");
+  const owner = "0x91769843CEc84Adcf7A48DF9DBd9694A39f44b42"; // example owner address
+  const coinType = 60; // example coin type
+  const expiry = Date.now() + 300; // example expiry timestamp
 
-  console.log("To sign:", toSign);
-
-                                    // this is the ccip private key we are using for testing
-  const private_key = ethers.getBytes("0xb9107381136de811b8e393a31c99b02382db3d374502c3b0f80f094d343df8d3");
-  const signingKey = new ethers.SigningKey(private_key);
-  const signature = signingKey.sign(ethers.getBytes(toSign));
-
-  return signature;
+  try {
+    const contentHashSignature = await hasher.getAddressHash(
+      node,
+      coinType,
+      addr,
+      owner,
+      expiry
+    );
+    console.log("Address record Signature:", contentHashSignature);
+  } catch (error) {
+    console.error("Test failed:", error);
+  }
 }
 
-// node scripts/signature.js
-async function main() {
-  // get parent namehash
-  const node = ethers.getBytes(
-    "0x0000000000000000000000000000000000000000000000000000000000001234"
-  );
-  const coinType = 60;
-
-  const owner = "0x0376aac07ad725e01357b1725b5cec61ae10473c"; // this should be the authorised owner of the ENS
-  const data = ethers.getBytes(owner);
-  const expiry = 86401; // should be a resonable time in the future, recommend 60 seconds
-
-  // this example is for getting address hash. Will need to be modified for text or contenthash
-  const signature = await addrHash(node, coinType, data, owner, expiry);
-
-  const fullSignature = getFullSignature(signature);
-  console.log("Full Signature:", fullSignature);
-}
-
-main();
+getContenthash();
+getAddress();
+getTextRecord();

@@ -17,7 +17,7 @@ contract L2ResolverTest is Test {
         
     }
 
-    function testSetTextRecord() public {
+    function testSetTextRecord__() public {
         string memory key = "exampleKey";
         string memory value = "exampleValue";
         uint256 expiry = block.timestamp + 1 days;
@@ -28,7 +28,14 @@ contract L2ResolverTest is Test {
             node := 0x1234
         }
 
+        console.log("contract address", address(resolver));
+        console.logBytes32(node);
+        console.log("expiry", expiry);
+
         bytes32 textHash = resolver.textHash(node, key, value, user, expiry);
+
+        console.log("textHash");
+        console.logBytes32(textHash);
 
         bytes memory gatewaySig;
         {
