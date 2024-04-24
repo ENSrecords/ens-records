@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {console} from "forge-std/console.sol";
+
+
 contract L2Resolver is
     ITextResolver,
     IContentHashResolver,
@@ -54,6 +56,8 @@ contract L2Resolver is
         }
 
         addr_[_node][_coinType] = _data;
+
+        emit AddressChanged(_node, _coinType, _data);
     }
 
     function setContenthash(
@@ -75,6 +79,8 @@ contract L2Resolver is
         }
 
         contenthash[_node] = _contenthash;
+
+        emit ContenthashChanged(_node, _contenthash);
     }
 
     function setText(
@@ -97,6 +103,8 @@ contract L2Resolver is
         }
 
         text[_node][_key] = _value;
+
+        emit TextChanged(_node, _key, _key, _value);
     }
 
     function addr(
